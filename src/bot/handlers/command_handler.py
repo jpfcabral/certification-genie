@@ -53,12 +53,15 @@ async def handle_train(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     Creates a training session and sends the first question as a poll.
     """
+    import sys
+    print(f"[DEBUG] handle_train called", flush=True, file=sys.stderr)
     user_service = context.bot_data["user_service"]
     session_service = context.bot_data["session_service"]
     question_service = context.bot_data["question_service"]
 
     telegram_id = update.effective_user.id
     user = await user_service.register_or_get_user(telegram_id)
+    print(f"[DEBUG] user registered: {user.id[:8]}", flush=True, file=sys.stderr)
 
     try:
         session = await session_service.start_training(user.id)
@@ -70,20 +73,31 @@ async def handle_train(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     if not session.questions_served:
+        # All questions answered — generate a new one
         await update.message.reply_text(
-            "No questions available yet. New questions will be generated soon!"
+            "🧠 All questions answered! Generating a new one..."
         )
-        return
-
-    # Fetch and send the first question
-    question_id = session.questions_served[0]
-    question_doc = await question_service._question_repository.get_by_id(
-        question_id, partition_key="AI-103"
-    )
-
-    if question_doc is None:
-        await update.message.reply_text("Could not load question. Please try again.")
-        return
+        from src.bot.handlers.poll_handler import _generate_new_question
+        try:
+            new_q = await _generate_new_question(question_service)
+            if not new_q:
+                await update.message.reply_text("⚠️ Could not generate a question. Try again later.")
+                return
+            question_id = new_q["id"]
+            question_doc = new_q
+        except Exception as e:
+            logger.error("Generation failed in /train: %s", e)
+            await update.message.reply_text("⚠️ Generation failed. Try again later.")
+            return
+    else:
+        # Fetch the first question from the session
+        question_id = session.questions_served[0]
+        question_doc = await question_service._question_repository.get_by_id(
+            question_id, partition_key="AI-103"
+        )
+        if question_doc is None:
+            await update.message.reply_text("Could not load question. Please try again.")
+            return
 
     from src.api.domain.models.question import Question
 

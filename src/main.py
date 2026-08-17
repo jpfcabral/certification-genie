@@ -83,6 +83,15 @@ async def _build_bot_app(settings) -> Application:
     # Free-text message handler (must be last)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+    # Error handler — logs all exceptions from handlers
+    async def error_handler(update, context):
+        import traceback, sys
+        tb = "".join(traceback.format_exception(type(context.error), context.error, context.error.__traceback__))
+        print(f"[BOT ERROR] {context.error}\n{tb}", file=sys.stderr, flush=True)
+        logger.error("Exception in handler: %s\n%s", context.error, tb)
+
+    app.add_error_handler(error_handler)
+
     # Initialize the bot application (required before processing updates)
     await app.initialize()
 

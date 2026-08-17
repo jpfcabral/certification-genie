@@ -78,38 +78,49 @@ async def _handle_menu_callback(
             return
 
         if not session.questions_served:
-            await query.edit_message_text(
-                "No questions available yet. New questions will be generated soon!"
+            # All questions answered — generate a new one
+            await query.edit_message_text("🧠 All questions answered! Generating a new one...")
+            from src.bot.handlers.poll_handler import _generate_new_question
+            question_service = context.bot_data["question_service"]
+            try:
+                new_q = await _generate_new_question(question_service)
+                if not new_q:
+                    await context.bot.send_message(chat_id=query.message.chat_id, text="⚠️ Could not generate. Try /train later.")
+                    return
+                question_id = new_q["id"]
+                question_doc = new_q
+            except Exception as e:
+                await context.bot.send_message(chat_id=query.message.chat_id, text=f"⚠️ Generation failed. Try /train later.")
+                return
+        else:
+            await query.edit_message_text("📚 Training mode started! Here's your first question:")
+            question_service = context.bot_data["question_service"]
+            question_id = session.questions_served[0]
+            question_doc = await question_service._question_repository.get_by_id(
+                question_id, partition_key="AI-103"
             )
-            return
+            if not question_doc:
+                await context.bot.send_message(chat_id=query.message.chat_id, text="Could not load question.")
+                return
 
-        await query.edit_message_text("📚 Training mode started! Here's your first question:")
+        # Send the question as a poll (works for both existing and generated)
+        from src.api.domain.models.question import Question
+        from src.bot.formatters.question_formatter import format_question_as_poll
 
-        # Send the first question as a poll
-        question_service = context.bot_data["question_service"]
-        question_id = session.questions_served[0]
-        question_doc = await question_service._question_repository.get_by_id(
-            question_id, partition_key="AI-103"
+        question = Question(**question_doc)
+        poll_params = format_question_as_poll(question)
+
+        sent_poll = await context.bot.send_poll(
+            chat_id=query.message.chat_id,
+            question=poll_params.question,
+            options=poll_params.options,
+            type=poll_params.type,
+            correct_option_id=poll_params.correct_option_id,
+            is_anonymous=poll_params.is_anonymous,
         )
 
-        if question_doc:
-            from src.api.domain.models.question import Question
-            from src.bot.formatters.question_formatter import format_question_as_poll
-
-            question = Question(**question_doc)
-            poll_params = format_question_as_poll(question)
-
-            sent_poll = await context.bot.send_poll(
-                chat_id=query.message.chat_id,
-                question=poll_params.question,
-                options=poll_params.options,
-                type=poll_params.type,
-                correct_option_id=poll_params.correct_option_id,
-                is_anonymous=poll_params.is_anonymous,
-            )
-
-            from src.bot.handlers.poll_handler import save_poll_mapping
-            await save_poll_mapping(context, sent_poll.poll.id, question_id, user.id)
+        from src.bot.handlers.poll_handler import save_poll_mapping
+        await save_poll_mapping(context, sent_poll.poll.id, question_id, user.id)
 
     elif action == "free_qa":
         try:
