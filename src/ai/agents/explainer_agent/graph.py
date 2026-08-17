@@ -1,70 +1,68 @@
-"""Explainer Agent graph definition.
+"""Explainer Agent — ReAct pattern with web search.
 
-Compiles a LangGraph StateGraph that:
-1. Explains the correct answer and why alternatives are wrong
-2. Conditionally enriches with documentation when the user asks "why"/"explain"
-
-The graph flow is: explain → (conditional) enrich → END
+Provides detailed explanations for incorrect answers, searching
+Azure documentation for authoritative context and references.
 """
 
-from langgraph.graph import END, StateGraph
+import logging
 
-from src.ai.agents.explainer_agent.nodes.enrich_node import enrich_node
-from src.ai.agents.explainer_agent.nodes.explain_node import explain_node
-from src.ai.agents.explainer_agent.state import ExplainerState
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+
+from src.ai.tools.search_tool import search_azure_docs
+from src.api.infrastructure.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+EXPLAINER_SYSTEM_PROMPT = """You are a certification exam tutor for the Azure AI-103 exam.
+
+## Your Role
+Explain why a specific answer is correct and why the other options are wrong.
+Provide authoritative explanations grounded in Azure documentation.
+
+## Instructions
+1. Use the search_azure_docs tool to find documentation about the correct answer's concept
+2. Explain clearly:
+   - Why the correct answer is right (with documentation evidence)
+   - Why each wrong option is incorrect
+   - A key takeaway for exam preparation
+3. Keep the total response under 4000 characters (Telegram limit)
+4. Cite documentation sources
+
+## Response Format
+**Correct Answer:** [letter and text]
+
+**Why it's correct:**
+[Explanation grounded in docs]
+
+**Why others are wrong:**
+- [Option]: [Why wrong]
+
+**Key Concept:**
+[One-sentence takeaway]
+
+**Sources:**
+- [URL from search]
+"""
 
 
-def _needs_enrichment(state: ExplainerState) -> str:
-    """Determine whether to enrich the explanation with documentation.
-
-    Routes to the enrich node when the user has explicitly asked for
-    more detail (e.g., "why" or "explain").
-
-    Args:
-        state: Current explainer state.
+def build_explainer_graph():
+    """Build the Explainer Agent using ReAct pattern with web search.
 
     Returns:
-        "enrich" if enrichment is needed, "end" otherwise.
+        A compiled ReAct agent graph.
     """
-    if state.get("needs_enrichment", False):
-        return "enrich"
-    return "end"
-
-
-def build_explainer_graph() -> StateGraph:
-    """Build and compile the Explainer Agent graph.
-
-    Graph flow:
-        explain → conditional edge:
-            - if needs_enrichment: enrich → END
-            - otherwise: END
-
-    The agent receives only question content (no user identifiers)
-    and produces explanations within the 4096 character Telegram limit.
-
-    Returns:
-        Compiled StateGraph for the Explainer Agent.
-    """
-    graph = StateGraph(ExplainerState)
-
-    # Add nodes
-    graph.add_node("explain", explain_node)
-    graph.add_node("enrich", enrich_node)
-
-    # Set entry point
-    graph.set_entry_point("explain")
-
-    # Add conditional edge from explain
-    graph.add_conditional_edges(
-        "explain",
-        _needs_enrichment,
-        {
-            "enrich": "enrich",
-            "end": END,
-        },
+    settings = get_settings()
+    llm = ChatOpenAI(
+        model=settings.OPENAI_MODEL,
+        api_key=settings.OPENAI_API_KEY,
+        temperature=0.3,
     )
 
-    # Enrich always goes to END
-    graph.add_edge("enrich", END)
+    agent = create_react_agent(
+        model=llm,
+        tools=[search_azure_docs],
+        prompt=EXPLAINER_SYSTEM_PROMPT,
+    )
 
-    return graph.compile()
+    return agent

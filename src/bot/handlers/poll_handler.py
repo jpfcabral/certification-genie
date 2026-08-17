@@ -183,43 +183,67 @@ async def _send_next_training_question(context, chat_id, user_id, session, quest
 
 
 async def _generate_new_question(question_service) -> dict | None:
-    """Generate a new question via Generator Agent, validate, persist."""
+    """Generate a new question via ReAct Generator Agent with web search."""
+    import json
     import random
     import uuid
     from datetime import datetime, timezone
     from src.ai.agents.generator_agent.graph import build_generator_graph
+    from src.ai.agents.generator_agent.nodes.validate_node import validate_node
     from src.api.domain.enums.domain_type import DomainType
 
     domain = random.choice(list(DomainType))
-    existing = await question_service._question_repository.get_active_by_certification("AI-103")
-    examples = [q for q in existing if q.get("domain") == domain.value][:3]
 
     graph = build_generator_graph()
+
     for attempt in range(2):
-        result = await graph.ainvoke({
-            "certification": "AI-103",
-            "target_domain": domain.value,
-            "example_questions": examples,
-            "feedback_context": None,
-            "generated_question": None,
-            "is_valid": False,
-            "validation_errors": [],
-        })
-        if result.get("is_valid") and result.get("generated_question"):
-            break
-        logger.warning("Generator attempt %d failed: %s", attempt + 1, result.get("validation_errors"))
-    else:
-        return None
+        try:
+            # ReAct agent takes messages as input
+            result = await graph.ainvoke({
+                "messages": [
+                    ("user", f"Generate a new AI-103 certification question for the domain: {domain.value}")
+                ]
+            })
 
-    question_data = result["generated_question"]
-    question_data["id"] = str(uuid.uuid4())
-    question_data["created_at"] = datetime.now(timezone.utc).isoformat()
-    question_data["quality_score"] = 1.0
-    question_data["is_active"] = True
-    question_data["generated_by"] = "generator_agent"
-    question_data["domain"] = domain.value
-    question_data["certification"] = "AI-103"
+            # Extract the last AI message content
+            last_message = result["messages"][-1]
+            content = last_message.content if hasattr(last_message, "content") else str(last_message)
 
-    await question_service._question_repository.create(question_data)
-    logger.info("Generated new question: %s (domain=%s)", question_data["id"][:8], domain.value)
-    return question_data
+            # Parse JSON from the response
+            # Strip markdown fences if present
+            if "```" in content:
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:]
+                content = content.strip()
+
+            question_data = json.loads(content)
+
+            # Validate with existing validate_node
+            state = {"generated_question": question_data}
+            val = validate_node(state)
+            if not val["is_valid"]:
+                logger.warning("Generator attempt %d validation failed: %s", attempt + 1, val["validation_errors"])
+                continue
+
+            # Prepare and persist
+            question_data["id"] = str(uuid.uuid4())
+            question_data["created_at"] = datetime.now(timezone.utc).isoformat()
+            question_data["quality_score"] = 1.0
+            question_data["is_active"] = True
+            question_data["generated_by"] = "generator_agent"
+            question_data["domain"] = domain.value
+            question_data["certification"] = "AI-103"
+
+            await question_service._question_repository.create(question_data)
+            logger.info("Generated new question: %s (domain=%s)", question_data["id"][:8], domain.value)
+            return question_data
+
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            logger.warning("Generator attempt %d parse error: %s", attempt + 1, e)
+            continue
+        except Exception as e:
+            logger.error("Generator attempt %d error: %s", attempt + 1, e)
+            continue
+
+    return None
