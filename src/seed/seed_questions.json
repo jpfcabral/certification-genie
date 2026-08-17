@@ -1,0 +1,182 @@
+[
+  {
+    "id": "seed-001",
+    "certification": "AI-103",
+    "domain": "Generative AI and Agents",
+    "text": "Which service in Azure AI Foundry allows you to create multi-turn conversational AI agents with built-in orchestration?",
+    "options": [
+      "Azure Bot Service",
+      "Azure AI Agent Service",
+      "Azure Cognitive Services",
+      "Azure Logic Apps"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Azure AI Agent Service provides built-in orchestration for multi-turn conversational agents in Azure AI Foundry.",
+    "detailed_explanation": "Azure AI Agent Service is the primary service in Azure AI Foundry for building conversational AI agents. It supports multi-turn conversations with built-in orchestration, memory management, and tool calling. Azure Bot Service is a broader bot framework without native orchestration. Azure Cognitive Services provides individual AI capabilities but not agent orchestration. Azure Logic Apps is for workflow automation, not conversational AI."
+  },
+  {
+    "id": "seed-002",
+    "certification": "AI-103",
+    "domain": "Generative AI and Agents",
+    "text": "When configuring a generative AI model in Azure OpenAI Service, which parameter controls the randomness of generated responses?",
+    "options": [
+      "max_tokens",
+      "top_p",
+      "frequency_penalty",
+      "temperature"
+    ],
+    "correct_answer_index": 3,
+    "short_explanation": "Temperature controls the randomness of model outputs; higher values produce more diverse responses.",
+    "detailed_explanation": "Temperature is the primary parameter that controls randomness in generative AI models. A temperature of 0 makes the model deterministic, while higher values (up to 2) increase randomness and creativity. max_tokens limits response length. top_p is an alternative sampling method (nucleus sampling). frequency_penalty reduces repetition but doesn't control overall randomness."
+  },
+  {
+    "id": "seed-003",
+    "certification": "AI-103",
+    "domain": "Generative AI and Agents",
+    "text": "What is the primary purpose of grounding in Azure AI generative applications?",
+    "options": [
+      "To reduce the cost of API calls",
+      "To limit the token count of responses",
+      "To connect model outputs to verifiable external data sources",
+      "To increase the speed of inference"
+    ],
+    "correct_answer_index": 2,
+    "short_explanation": "Grounding connects generative model outputs to verifiable external data, reducing hallucinations.",
+    "detailed_explanation": "Grounding in generative AI refers to connecting model outputs to verifiable external data sources such as enterprise documents, databases, or web search results. This reduces hallucinations by ensuring responses are based on factual information. It does not primarily affect cost, token count, or inference speed. In Azure, grounding is commonly implemented via Azure AI Search integration with RAG patterns."
+  },
+  {
+    "id": "seed-004",
+    "certification": "AI-103",
+    "domain": "Computer Vision",
+    "text": "Which Azure AI Vision capability is used to extract text from images and scanned documents?",
+    "options": [
+      "Image Classification",
+      "Object Detection",
+      "Optical Character Recognition (OCR)",
+      "Spatial Analysis"
+    ],
+    "correct_answer_index": 2,
+    "short_explanation": "OCR (Optical Character Recognition) extracts printed and handwritten text from images and documents.",
+    "detailed_explanation": "Optical Character Recognition (OCR) is the Azure AI Vision capability specifically designed to extract text from images and scanned documents. It supports both printed and handwritten text in multiple languages. Image Classification categorizes entire images. Object Detection identifies and locates objects within images. Spatial Analysis tracks people's movement in physical spaces using video feeds."
+  },
+  {
+    "id": "seed-005",
+    "certification": "AI-103",
+    "domain": "Computer Vision",
+    "text": "In Azure AI Vision, which feature would you use to generate a natural language description of an image?",
+    "options": [
+      "Image captioning",
+      "Face detection",
+      "Object detection",
+      "Background removal"
+    ],
+    "correct_answer_index": 0,
+    "short_explanation": "Image captioning generates human-readable descriptions of image content using AI.",
+    "detailed_explanation": "Image captioning in Azure AI Vision analyzes an image and generates a natural language sentence describing its content. This uses deep learning models trained on large datasets of images paired with descriptions. Face detection identifies human faces but doesn't describe the scene. Object detection identifies and locates specific objects but returns structured data, not natural language. Background removal separates foreground from background."
+  },
+  {
+    "id": "seed-006",
+    "certification": "AI-103",
+    "domain": "Text Analysis",
+    "text": "Which Azure AI Language feature identifies and categorizes entities like people, places, and organizations in unstructured text?",
+    "options": [
+      "Sentiment Analysis",
+      "Named Entity Recognition (NER)",
+      "Key Phrase Extraction",
+      "Language Detection"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Named Entity Recognition (NER) identifies and categorizes entities such as people, places, and organizations.",
+    "detailed_explanation": "Named Entity Recognition (NER) in Azure AI Language identifies and classifies entities in unstructured text into predefined categories like Person, Location, Organization, DateTime, and Quantity. Sentiment Analysis determines the emotional tone of text. Key Phrase Extraction identifies the main concepts and topics. Language Detection identifies which language the text is written in."
+  },
+  {
+    "id": "seed-007",
+    "certification": "AI-103",
+    "domain": "Text Analysis",
+    "text": "When using Azure AI Language for sentiment analysis, which granularity levels are supported?",
+    "options": [
+      "Document level only",
+      "Document and sentence level",
+      "Word level only",
+      "Paragraph and chapter level"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Azure AI Language sentiment analysis provides results at both document and sentence levels.",
+    "detailed_explanation": "Azure AI Language sentiment analysis operates at two granularity levels: document level (overall sentiment of the entire text) and sentence level (sentiment for each individual sentence). This dual-level analysis allows developers to understand both the overall tone and specific parts that contribute to it. Word-level and paragraph/chapter-level granularities are not supported as standard output."
+  },
+  {
+    "id": "seed-008",
+    "certification": "AI-103",
+    "domain": "Information Extraction",
+    "text": "Which Azure service is specifically designed to extract structured data from forms, receipts, and invoices?",
+    "options": [
+      "Azure AI Language",
+      "Azure AI Document Intelligence",
+      "Azure AI Vision",
+      "Azure AI Search"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Azure AI Document Intelligence extracts structured data from forms, receipts, invoices, and other documents.",
+    "detailed_explanation": "Azure AI Document Intelligence (formerly Form Recognizer) is purpose-built to extract structured information from documents like forms, receipts, invoices, and identity documents. It uses pre-built models for common document types and supports custom models. Azure AI Language handles text analysis but not document structure. Azure AI Vision provides general image analysis. Azure AI Search indexes and searches content but doesn't extract document structures."
+  },
+  {
+    "id": "seed-009",
+    "certification": "AI-103",
+    "domain": "Information Extraction",
+    "text": "In Azure AI Document Intelligence, what is the difference between pre-built models and custom models?",
+    "options": [
+      "Pre-built models are faster; custom models are more accurate",
+      "Pre-built models handle common docs without training; custom models need labeled data",
+      "Pre-built models are free; custom models require a paid tier",
+      "Pre-built models work offline; custom models require internet"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Pre-built models handle common documents without training; custom models need labeled data for specific layouts.",
+    "detailed_explanation": "Pre-built models in Azure AI Document Intelligence are ready-to-use models trained by Microsoft for common document types (invoices, receipts, IDs, business cards). They require no additional training. Custom models are trained on your specific document layouts using labeled training data, making them ideal for proprietary forms. Both have similar performance characteristics and pricing tiers, and both require an internet connection to the Azure service."
+  },
+  {
+    "id": "seed-010",
+    "certification": "AI-103",
+    "domain": "Plan and Manage",
+    "text": "Which practice is recommended when implementing responsible AI principles for an Azure AI solution?",
+    "options": [
+      "Deploy models directly to production without testing",
+      "Use content filtering, implement human review processes, and monitor model outputs",
+      "Rely solely on model confidence scores for quality assurance",
+      "Disable logging to protect user privacy"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Responsible AI requires content filtering, human review, and output monitoring for safe deployment.",
+    "detailed_explanation": "Microsoft's Responsible AI principles require multiple safeguards when deploying AI solutions. This includes content filtering to prevent harmful outputs, human review processes for high-stakes decisions, and continuous monitoring of model outputs. Deploying without testing violates safety principles. Relying solely on confidence scores is insufficient. Disabling logging prevents necessary auditing and compliance monitoring."
+  },
+  {
+    "id": "seed-011",
+    "certification": "AI-103",
+    "domain": "Plan and Manage",
+    "text": "What is the primary purpose of Azure AI Content Safety service?",
+    "options": [
+      "To encrypt data at rest in Azure storage",
+      "To detect and filter harmful content including hate speech, violence, and self-harm",
+      "To manage API key rotation schedules",
+      "To optimize model inference performance"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Azure AI Content Safety detects and filters harmful content categories including hate, violence, and self-harm.",
+    "detailed_explanation": "Azure AI Content Safety is a service that analyzes text and images for harmful content across categories including hate speech, violence, sexual content, and self-harm. It provides severity scores and can be integrated into content moderation pipelines. It is not an encryption service (that's Azure Storage encryption), not for key management (that's Azure Key Vault), and not for performance optimization."
+  },
+  {
+    "id": "seed-012",
+    "certification": "AI-103",
+    "domain": "Generative AI and Agents",
+    "text": "In a Retrieval-Augmented Generation (RAG) pattern on Azure, which component is responsible for indexing and searching relevant documents?",
+    "options": [
+      "Azure OpenAI Service",
+      "Azure AI Search",
+      "Azure Cosmos DB",
+      "Azure Functions"
+    ],
+    "correct_answer_index": 1,
+    "short_explanation": "Azure AI Search handles document indexing and semantic search in RAG architectures on Azure.",
+    "detailed_explanation": "In a RAG architecture on Azure, Azure AI Search is the component responsible for indexing documents and performing semantic or vector search to retrieve relevant content. This retrieved content is then passed as context to Azure OpenAI Service for generation. Azure OpenAI handles the generation step. Cosmos DB can store data but lacks the specialized search capabilities. Azure Functions can orchestrate workflows but don't provide search functionality."
+  }
+]
