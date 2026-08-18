@@ -43,3 +43,8 @@ output "resource_group_name" {
   description = "The name of the resource group"
   value       = azurerm_resource_group.this.name
 }
+
+output "container_app_name" {
+  description = "The name of the Container App"
+  value       = module.container_apps.app_name
+}

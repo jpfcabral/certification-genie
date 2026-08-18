@@ -2,7 +2,7 @@
 # Certification Genie — Makefile
 # ═══════════════════════════════════════════════════════════════════════
 
-.PHONY: help dev down build test test-e2e test-fast seed deploy push-image tf-init tf-plan tf-apply tf-output webhook-set webhook-info webhook-delete check-env logs
+.PHONY: help dev down build test test-e2e test-fast seed deploy update push-image tf-init tf-plan tf-apply tf-output webhook-set webhook-info webhook-delete check-env logs
 
 # Load .env file if it exists
 ifneq (,$(wildcard ./.env))
@@ -91,6 +91,17 @@ deploy: ## Full deploy (push image first, then infra)
 	@echo " Deploy complete!"
 	@echo "═══════════════════════════════════════════"
 	@cd infra && terraform output container_app_url
+
+update: push-image ## Build, push image and update Container App revision (fast deploy)
+	@RG=$$(cd infra && terraform output -raw resource_group_name 2>/dev/null || echo "certgenie-dev-rg") && \
+	APP=$$(cd infra && terraform output -raw container_app_name 2>/dev/null || echo "certgenie-dev-app") && \
+	IMAGE="$(REGISTRY)/$(PROJECT_NAME):$(IMAGE_TAG)" && \
+	echo "Updating $$APP in $$RG with image $$IMAGE..." && \
+	az containerapp update --name $$APP --resource-group $$RG --image $$IMAGE && \
+	echo "" && \
+	echo "═══════════════════════════════════════════" && \
+	echo " Container App updated!" && \
+	echo "═══════════════════════════════════════════"
 
 # ─── Telegram Webhook ─────────────────────────────────────────────────
 

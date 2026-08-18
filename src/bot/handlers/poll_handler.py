@@ -35,7 +35,12 @@ async def save_poll_mapping(context, poll_id: str, question_id: str, user_id: st
 
 
 async def get_poll_mapping(context, poll_id: str) -> tuple[str | None, str | None]:
-    """Retrieve poll mapping — memory first, then CosmosDB."""
+    """Retrieve poll mapping — memory first, then CosmosDB.
+
+    After scale-to-zero, in-memory bot_data is lost. The CosmosDB
+    fallback queries by the document id using a cross-partition query
+    since the partition key (/user_id) is unknown at lookup time.
+    """
     question_id = context.bot_data.get("poll_to_question", {}).get(poll_id)
     user_id = context.bot_data.get("poll_to_user", {}).get(poll_id)
     if question_id and user_id:
@@ -43,16 +48,27 @@ async def get_poll_mapping(context, poll_id: str) -> tuple[str | None, str | Non
     try:
         from src.api.infrastructure.cosmos_client import get_cosmos_client
         cosmos = get_cosmos_client()
-        doc = await cosmos.user_questions.read_item(
-            item=f"poll:{poll_id}", partition_key=f"poll:{poll_id}"
+        query = "SELECT * FROM c WHERE c.id = @id AND c.type = 'poll_mapping'"
+        parameters = [{"name": "@id", "value": f"poll:{poll_id}"}]
+        items = cosmos.user_questions.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True,
         )
-        question_id = doc.get("question_id")
-        user_id = doc.get("user_id")
-        if question_id and user_id:
-            context.bot_data.setdefault("poll_to_question", {})[poll_id] = question_id
-            context.bot_data.setdefault("poll_to_user", {})[poll_id] = user_id
-        return question_id, user_id
-    except Exception:
+        doc = None
+        async for item in items:
+            doc = item
+            break
+        if doc:
+            question_id = doc.get("question_id")
+            user_id = doc.get("user_id")
+            if question_id and user_id:
+                context.bot_data.setdefault("poll_to_question", {})[poll_id] = question_id
+                context.bot_data.setdefault("poll_to_user", {})[poll_id] = user_id
+            return question_id, user_id
+        return None, None
+    except Exception as e:
+        logger.warning("Failed to retrieve poll mapping from CosmosDB: %s", e)
         return None, None
 
 
@@ -68,6 +84,19 @@ async def handle_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE)
     question_id, user_id = await get_poll_mapping(context, poll_id)
     if question_id is None or user_id is None:
         logger.warning("Received poll answer for unknown poll: %s", poll_id)
+        # After scale-to-zero the mapping may be lost. Notify the user
+        # so they know to resend a question instead of waiting forever.
+        if poll_answer.user:
+            try:
+                await context.bot.send_message(
+                    chat_id=poll_answer.user.id,
+                    text=(
+                        "⚠️ Sorry, I lost track of this question (server restarted). "
+                        "Please use /train or /simulate to continue."
+                    ),
+                )
+            except Exception as send_err:
+                logger.debug("Could not notify user about lost poll mapping: %s", send_err)
         return
 
     session_service = context.bot_data["session_service"]
